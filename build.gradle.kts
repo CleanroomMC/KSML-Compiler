@@ -1,0 +1,39 @@
+import org.gradle.kotlin.dsl.implementation
+
+plugins {
+    id("java")
+    antlr
+    id("com.gradleup.shadow") version ("8.3.0")
+}
+
+group = "com.cleanroommc.ksmlc"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    shadow("org.antlr:antlr4-runtime:4.5") {
+        isTransitive = false
+    }
+    antlr("org.antlr:antlr4:4.5")
+
+    implementation("org.anarres:jcpp:1.4.14")
+    shadow("org.anarres:jcpp:1.4.14") {
+        isTransitive = false
+    }
+    
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+tasks.generateGrammarSource {
+    arguments.addAll(listOf("-visitor", "-package", "com.cleanroommc.ksmlc.glsl.grammar"))
+    outputDirectory = file("build/generated-src/antlr/main/com/cleanroommc/ksmlc/glsl/grammar/")
+}
+
+
+tasks.test {
+    useJUnitPlatform()
+}
