@@ -1,11 +1,14 @@
 package com.cleanroommc.ksmlc;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        KSMLCompiler compiler = new KSMLCompiler(null, new SourceFile[]{SourceFile.fromResource("math.ksml")}, null);
 
-        compiler.compile();
-    }
+  public static void main(String[] args) throws IOException, URISyntaxException {
+    KSMLCompiler compiler = new KSMLCompiler(SourceFile.fromResource("main.glsl"),
+        new SourceFile[]{SourceFile.fromResource("math.ksml")}, null);
+
+    System.out.println(compiler.compile());
+  }
 }

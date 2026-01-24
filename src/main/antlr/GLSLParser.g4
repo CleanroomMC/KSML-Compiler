@@ -29,8 +29,11 @@ options {
 }
 
 translation_unit
-    : (compiler_directive | external_declaration)* EOF
+    : importMeta* (compiler_directive | external_declaration)* EOF
     ;
+
+importMeta
+    : AT IMPORT IDENTIFIER;
 
 variable_identifier
     : IDENTIFIER
@@ -48,13 +51,13 @@ primary_expression
     ;
 
 postfix_expression
-    : primary_expression
-    | postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET
-    | postfix_expression LEFT_PAREN function_call_parameters? RIGHT_PAREN
-    | type_specifier LEFT_PAREN function_call_parameters? RIGHT_PAREN
-    | postfix_expression DOT field_selection
-    | postfix_expression INC_OP
-    | postfix_expression DEC_OP
+    : primary_expression                                                  # primary
+    | postfix_expression LEFT_BRACKET integer_expression RIGHT_BRACKET    # arrayIndex
+    | postfix_expression LEFT_PAREN function_call_parameters? RIGHT_PAREN # functionCall
+    | type_specifier LEFT_PAREN function_call_parameters? RIGHT_PAREN     # typeConstructor
+    | postfix_expression DOT field_selection                              # memberAccess
+    | postfix_expression INC_OP                                           # postIncrement
+    | postfix_expression DEC_OP                                           # postDecrement
     ;
 
 field_selection
@@ -139,13 +142,13 @@ constant_expression
     ;
 
 declaration
-    : function_prototype SEMICOLON
-    | init_declarator_list SEMICOLON
-    | PRECISION precision_qualifier type_specifier SEMICOLON
-    | type_qualifier IDENTIFIER LEFT_BRACE struct_declaration_list RIGHT_BRACE (
+    : function_prototype SEMICOLON                                                # functionDecl
+    | init_declarator_list SEMICOLON                                              # structDecl
+    | PRECISION precision_qualifier type_specifier SEMICOLON                      # precisionDecl
+    | type_qualifier IDENTIFIER LEFT_BRACE struct_declaration_list RIGHT_BRACE (  
         IDENTIFIER array_specifier?
-    )? SEMICOLON
-    | type_qualifier identifier_list? SEMICOLON
+    )? SEMICOLON                                                                  # interfaceBlockDecl
+    | type_qualifier identifier_list? SEMICOLON                                   # variableDecl
     ;
 
 identifier_list

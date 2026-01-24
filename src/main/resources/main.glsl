@@ -4,5 +4,5 @@
 
 void main()
 {
-    int sum = math.add(1, 2);
+    int sum = math.add_checked(1, 2);
 }

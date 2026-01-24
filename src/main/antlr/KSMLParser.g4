@@ -6,16 +6,23 @@ options {
 	tokenVocab = KSMLLexer;
 }
 
-ksmlTranslationUnit: moduleMeta glVersionMeta externalDeclarations* EOF;
+ksmlTranslationUnit : moduleMeta glVersionMeta requiresMeta* ksmlDeclaration* EOF;
 
-exportMeta: AT EXPORT IDENTIFIER?;
+moduleMeta : AT MODULE IDENTIFIER;
 
-externalDeclarations:
-    exportMeta?
+requiresMeta : AT REQUIRES IDENTIFIER; 
+
+ksmlDeclaration :
+    delcarationMetas
     external_declaration;
+    
+delcarationMetas :
+  (exportMeta | glRequiresMeta)*;
 
-moduleMeta: AT MODULE IDENTIFIER;
+exportMeta : AT EXPORT IDENTIFIER?;
 
-glVersionMeta: AT GL_VERSION VERSION_NUMBER;
+glRequiresMeta : AT GL_REQUIRES VERSION_NUMBER;
+
+glVersionMeta : AT GL_VERSION VERSION_NUMBER;
 
 

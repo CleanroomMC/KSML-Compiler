@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     id("java")
     antlr
@@ -11,6 +9,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://jitpack.io") }
 }
 
 dependencies {
@@ -23,6 +22,8 @@ dependencies {
     shadow("org.anarres:jcpp:1.4.14") {
         isTransitive = false
     }
+
+    implementation("com.github.ChAoSUnItY:Nenggao:1.4.2")
     
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
