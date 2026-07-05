@@ -23,7 +23,7 @@ dependencies {
         isTransitive = false
     }
 
-    implementation("com.github.ChAoSUnItY:Nenggao:1.4.2")
+    implementation("com.github.ChAoSUnItY:Nenggao:1.4.3")
     
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
