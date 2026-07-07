@@ -1,13 +1,14 @@
 package com.cleanroommc.ksmlc;
 
-import chaos.unity.nenggao.AbstractSpan;
 import chaos.unity.nenggao.FileReportBuilder;
 import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.*;
 import com.cleanroommc.ksmlc.glsl.grammar.KSMLParserBaseListener;
-import com.diogonunes.jcolor.Ansi;
 import com.diogonunes.jcolor.Attribute;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class KSMLRewriteListener extends KSMLParserBaseListener {
 
@@ -21,6 +22,12 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
   private String requireVersion;
   // @export context
   private ExportMetaContext exportMetaCtx;
+  // @gl_requires context
+  private GlRequiresMetaContext glRequiresMetaCtx;
+  // @feature context
+  private List<FeatureMetaContext> featureMetaCtxs = new ArrayList<>();
+  // @code context
+  private CodeBlockContext codeBlockCtx;
 
   public KSMLRewriteListener(final TokenStreamRewriter rewriter,
                              final SourceFile ksmlSource,
@@ -72,7 +79,13 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
     }
 
     requireVersion = ctx.VERSION_NUMBER().getText();
+    glRequiresMetaCtx = ctx;
     rewriter.replace(ctx.start, ctx.stop, "");
+  }
+
+  @Override
+  public void enterFeatureMeta(FeatureMetaContext ctx) {
+    featureMetaCtxs.add(ctx);
   }
 
   @Override
@@ -81,6 +94,8 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
     rewriter.replace(ctx.TRIPLE_QUOTE(1).getSymbol(), "\n");
     // Clear meta contexts
     exportMetaCtx = null;
+    glRequiresMetaCtx = null;
+    featureMetaCtxs.clear();
   }
 
   @Override
@@ -108,15 +123,6 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
             new Interval(ctx.function_prototype().start.getTokenIndex(),
                     ctx.function_prototype().stop.getTokenIndex())));
     builder.addModuleMemberReference(moduleName, functionName, Utils.spanFromCtx(ctx));
-  }
-
-  @Override
-  public void enterFunctionDecl(FunctionDeclContext ctx) {
-    AbstractSpan span = Utils.spanFromCtx(ctx);
-
-    fileReportBuilder.error(span, "Function prototype is not allowed in KSML")
-            .label(span, "Error occurs here").color(Attribute.RED_TEXT()).build()
-            .build();
   }
 
   @Override

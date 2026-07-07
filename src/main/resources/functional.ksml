@@ -1,0 +1,8 @@
+@module functional
+@gl_version 330 core
+
+@code """
+int id(int a) {
+    return a;
+}
+"""

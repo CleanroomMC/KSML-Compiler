@@ -1,10 +1,18 @@
 @module math
-@gl_version 120
+@gl_version 330 core
+@requires functional
 
 @export
 @code """
 int add_checked(int a, int b)
 {
-    return a + b;
+    return internal(a);
+}
+"""
+
+@code """
+int internal(int a)
+{
+    return functional.id(a);
 }
 """
