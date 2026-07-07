@@ -38,9 +38,6 @@ public class KSMLCompiler {
               GeneralErrorListener::new,
               rewriter -> new KSMLRewriteListener(rewriter, ksmlSource, builder));
 
-      System.out.println("KEK");
-      System.out.println(stripped);
-
       KSMLFileContext ctx = builder.build(stripped);
       contexts.add(ctx);
     }
@@ -75,7 +72,7 @@ public class KSMLCompiler {
     assembleGLSLBody(builder);
     builder.append(strippedGLSL);
 
-    return builder.toString().replace(System.lineSeparator().repeat(2), "");
+    return builder.toString();
   }
 
   private void assembleGLSLVersion(final GLSLPostStrippingContext ctx,
@@ -93,27 +90,32 @@ public class KSMLCompiler {
   private void assembleKSMLModuleHeaders(final List<KSMLFileContext> contexts,
                                          final StringBuilder builder) {
     for (var ctx : contexts) {
+      var glProfile = ctx.glProfile != null ? ctx.glProfile : "core";
+
       builder.append(String.format("/* MODULE \"%s\" PROTOTYPE DEFINITIONS */\n", ctx.moduleName));
-      builder.append(String.format("/* MODULE GL_VERSION: %s */\n", ctx.glVersion));
-      builder.append("/* AUTO-GENERATED PROTOTYPES */\n");
+      builder.append(String.format("/* MODULE GL_VERSION: %s %s */\n", ctx.glVersion, glProfile));
+      builder.append("/* AUTO-GENERATED PROTOTYPES */\n\n");
       for (var declaration : ctx.declarationPrototypes) {
         builder.append(declaration).append(";\n");
       }
+      builder.append('\n');
     }
   }
 
   private void assembleKSMLModuleBodies(final List<KSMLFileContext> contexts,
                                         final StringBuilder builder) {
     for (var ctx : contexts) {
-      builder.append(String.format("/* MODULE \"%s\" DEFINITIONS */\n", ctx.moduleName));
+      builder.append(String.format("/* MODULE \"%s\" DEFINITIONS */\n\n", ctx.moduleName));
       builder.append(String.format("#line 1 \"%s\"\n", ctx.sourceFile.fileName()));
       builder.append(ctx.strippedSource);
+      builder.append('\n');
     }
   }
 
   private void assembleGLSLBody(final StringBuilder builder) {
-    builder.append("/* GLSL SHADER DEFINITION */\n");
+    builder.append("/* GLSL SHADER DEFINITION */\n\n");
     builder.append(String.format("#line 1 \"%s\"\n", glslSource.fileName()));
+    builder.append('\n');
   }
 
   private <LE extends Lexer, PA extends Parser, EL extends BaseErrorListener, LI extends ParseTreeListener> String compileSource(

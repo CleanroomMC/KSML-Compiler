@@ -313,7 +313,8 @@ IMPORT_DIRECTIVE  : '//' [ \t]* '@import' [ \t]+ IDENTIFIER [ \t]*;
 LINE_COMMENT      : '//' (~ [\r\n\\] | '\\' (NEWLINE | .))* -> channel(HIDDEN);
 LINE_CONTINUATION : '\\' NEWLINE                            -> channel(HIDDEN);
 IDENTIFIER        : [a-zA-Z_] [a-zA-Z0-9_]*;
-WHITE_SPACE       : [ \t\r\n]+ -> channel(HIDDEN);
+WHITE_SPACE       : [ \t]+     -> channel(HIDDEN);
+NEW_LINES         : [\r\n]+    -> channel(HIDDEN);
 
 // --- MODES: Removed all instances of channel(DIRECTIVES) ---
 

@@ -1,6 +1,7 @@
 package com.cleanroommc.ksmlc;
 
 import chaos.unity.nenggao.FileReportBuilder;
+import com.cleanroommc.ksmlc.glsl.grammar.GLSLLexer;
 import com.cleanroommc.ksmlc.glsl.grammar.GLSLParser;
 import com.cleanroommc.ksmlc.glsl.grammar.GLSLParserBaseListener;
 import com.diogonunes.jcolor.Ansi;
@@ -10,7 +11,7 @@ import java.util.Optional;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
 
-public class GLSLRewriteListener extends GLSLParserBaseListener {
+public class GLSLRewriteListener extends GLSLParserBaseListener implements RewriterListener {
 
   private final TokenStreamRewriter rewriter;
   private final SourceFile glslSource;
@@ -39,12 +40,14 @@ public class GLSLRewriteListener extends GLSLParserBaseListener {
       builder.setVersionProfile(ctx.profile().PROFILE().getText());
     }
 
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
   public void enterImportMeta(GLSLParser.ImportMetaContext ctx) {
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
@@ -72,5 +75,15 @@ public class GLSLRewriteListener extends GLSLParserBaseListener {
             .build();
       }
     }
+  }
+
+  @Override
+  public TokenStreamRewriter getRewriter() {
+    return rewriter;
+  }
+
+  @Override
+  public int getNewLineType() {
+    return GLSLLexer.WHITE_SPACE;
   }
 }

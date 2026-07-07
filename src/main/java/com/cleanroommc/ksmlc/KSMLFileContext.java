@@ -13,6 +13,7 @@ public class KSMLFileContext {
   // Per file context
   public final String moduleName;
   public final String glVersion;
+  public final String glProfile;
   public final List<String> requiredModules;
   // The members defined in this file, this includes function, struct, interface block etc,
   // the key represents the exposed globalVisibleName that other KSML files can access, and the value is the
@@ -28,6 +29,7 @@ public class KSMLFileContext {
       final SourceFile sourceFile,
       final String moduleName,
       final String glVersion,
+      final String glProfile,
       final List<String> requiredModules,
       final HashMap<String, String> memberNames,
       final HashMap<String, Exportable> exported,
@@ -39,6 +41,7 @@ public class KSMLFileContext {
     this.fileReportBuilder = sourceFile.reportBuilder();
     this.moduleName = moduleName;
     this.glVersion = glVersion;
+    this.glProfile = glProfile;
     this.requiredModules = requiredModules;
     this.memberNames = memberNames;
     this.exported = exported;
@@ -52,6 +55,7 @@ public class KSMLFileContext {
     private final SourceFile sourceFile;
     private String moduleName;
     private String glVersion;
+    private String glProfile;
     private final List<String> requiredModules = new ArrayList<>();
     private final HashMap<String, String> memberNames = new HashMap<>();
     private final HashMap<String, Exportable> exported = new HashMap<>();
@@ -66,8 +70,9 @@ public class KSMLFileContext {
       this.moduleName = moduleName;
     }
 
-    public void setGlVersion(final String glVersion) {
+    public void setGlVersion(final String glVersion, final String glProfile) {
       this.glVersion = glVersion;
+      this.glProfile = glProfile;
     }
 
     public void addRequiredModule(final String moduleName) {
@@ -92,7 +97,7 @@ public class KSMLFileContext {
           new Exportable(globalVisibleName, ksmlVisibleName, version, targetType));
     }
 
-    public void addDeclaration(final String declaration) {
+    public void addDeclarationPrototype(final String declaration) {
       declarationPrototypes.add(declaration);
     }
 
@@ -106,6 +111,7 @@ public class KSMLFileContext {
           sourceFile,
           moduleName,
           glVersion,
+          glProfile,
           requiredModules,
           memberNames,
           exported,

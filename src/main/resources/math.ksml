@@ -6,7 +6,7 @@
 @code """
 int add_checked(int a, int b)
 {
-    return internal(a);
+    return a + b;
 }
 """
 

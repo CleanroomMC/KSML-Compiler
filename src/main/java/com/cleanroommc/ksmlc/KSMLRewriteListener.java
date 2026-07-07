@@ -1,16 +1,18 @@
 package com.cleanroommc.ksmlc;
 
 import chaos.unity.nenggao.FileReportBuilder;
+import com.cleanroommc.ksmlc.glsl.grammar.KSMLLexer;
 import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.*;
 import com.cleanroommc.ksmlc.glsl.grammar.KSMLParserBaseListener;
 import com.diogonunes.jcolor.Attribute;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.TokenStreamRewriter;
 import org.antlr.v4.runtime.misc.Interval;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class KSMLRewriteListener extends KSMLParserBaseListener {
+public class KSMLRewriteListener extends KSMLParserBaseListener implements RewriterListener {
 
   private final TokenStreamRewriter rewriter;
   private final SourceFile ksmlSource;
@@ -39,21 +41,41 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
   }
 
   @Override
+  public void enterKsmlTranslationUnit(KsmlTranslationUnitContext ctx) {
+    deleteNewlines(ctx.moduleMeta());
+    super.enterKsmlTranslationUnit(ctx);
+  }
+
+  @Override
+  public void enterKsmlDeclaration(KsmlDeclarationContext ctx) {
+    for (var metaCtx : ctx.declarationMeta()) {
+      deleteNewlines(metaCtx);
+    }
+    deleteNewlines(ctx.codeBlock());
+  }
+
+  @Override
   public void enterModuleMeta(ModuleMetaContext ctx) {
     builder.setModule(moduleName = ctx.IDENTIFIER().getText());
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
   public void enterRequiresMeta(RequiresMetaContext ctx) {
     builder.addRequiredModule(ctx.IDENTIFIER().getText());
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
   public void enterGlVersionMeta(GlVersionMetaContext ctx) {
-    builder.setGlVersion(ctx.VERSION_NUMBER().getText());
-    rewriter.replace(ctx.start, ctx.stop, "");
+    var profile = ctx.glVersionIdent();
+    var profileIndent = profile != null ? profile.getText() : null;
+
+    builder.setGlVersion(ctx.VERSION_NUMBER().getText(), profileIndent);
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
@@ -66,7 +88,8 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
     }
 
     exportMetaCtx = ctx;
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
@@ -80,7 +103,8 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
 
     requireVersion = ctx.VERSION_NUMBER().getText();
     glRequiresMetaCtx = ctx;
-    rewriter.replace(ctx.start, ctx.stop, "");
+    deleteNewlines(ctx);
+    deleteCtx(ctx);
   }
 
   @Override
@@ -90,8 +114,9 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
 
   @Override
   public void exitCodeBlock(CodeBlockContext ctx) {
-    rewriter.replace(ctx.AT().getSymbol(), ctx.TRIPLE_QUOTE(0).getSymbol(), "\n");
-    rewriter.replace(ctx.TRIPLE_QUOTE(1).getSymbol(), "\n");
+    rewriter.delete(ctx.AT().getSymbol(), ctx.TRIPLE_QUOTE(0).getSymbol());
+    deleteNewlines(ctx.TRIPLE_QUOTE(0));
+    rewriter.delete(ctx.TRIPLE_QUOTE(1).getSymbol());
     // Clear meta contexts
     exportMetaCtx = null;
     glRequiresMetaCtx = null;
@@ -119,7 +144,7 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
 
     rewriter.replace(functionNameIdentifier.getSymbol(), functionNameIdentifier.getSymbol(),
             Utils.synthesizeModuleMemberName(moduleName, functionName));
-    builder.addDeclaration(rewriter.getText(
+    builder.addDeclarationPrototype(rewriter.getText(
             new Interval(ctx.function_prototype().start.getTokenIndex(),
                     ctx.function_prototype().stop.getTokenIndex())));
     builder.addModuleMemberReference(moduleName, functionName, Utils.spanFromCtx(ctx));
@@ -138,5 +163,15 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
       rewriter.replace(maCtx.start, maCtx.stop,
               Utils.synthesizeModuleMemberName(moduleName, functionName));
     }
+  }
+
+  @Override
+  public TokenStreamRewriter getRewriter() {
+    return rewriter;
+  }
+
+  @Override
+  public int getNewLineType() {
+    return KSMLLexer.NEW_LINES;
   }
 }
