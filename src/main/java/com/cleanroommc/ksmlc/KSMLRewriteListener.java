@@ -18,6 +18,7 @@ public class KSMLRewriteListener extends KSMLParserBaseListener implements Rewri
   private final SourceFile ksmlSource;
   private final FileReportBuilder fileReportBuilder;
   private final KSMLFileContext.Builder builder;
+  private final int fileId;
   // @module context
   private String moduleName;
   // @gl_require context
@@ -33,11 +34,13 @@ public class KSMLRewriteListener extends KSMLParserBaseListener implements Rewri
 
   public KSMLRewriteListener(final TokenStreamRewriter rewriter,
                              final SourceFile ksmlSource,
-                             final KSMLFileContext.Builder builder) {
+                             final KSMLFileContext.Builder builder,
+                             final int fileId) {
     this.rewriter = rewriter;
     this.ksmlSource = ksmlSource;
     this.fileReportBuilder = ksmlSource.reportBuilder();
     this.builder = builder;
+    this.fileId = fileId;
   }
 
   @Override
@@ -148,6 +151,9 @@ public class KSMLRewriteListener extends KSMLParserBaseListener implements Rewri
             new Interval(ctx.function_prototype().start.getTokenIndex(),
                     ctx.function_prototype().stop.getTokenIndex())));
     builder.addModuleMemberReference(moduleName, functionName, Utils.spanFromCtx(ctx));
+    // Add line directive after prototype is registered so that
+    // the declaration prototypes are clean on site
+    rewriter.insertBefore(ctx.start, String.format("#line %d %d\n", ctx.start.getLine(), fileId));
   }
 
   @Override

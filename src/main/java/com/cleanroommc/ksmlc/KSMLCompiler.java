@@ -9,8 +9,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 public class KSMLCompiler {
@@ -19,6 +18,8 @@ public class KSMLCompiler {
   private final SourceFile[] ksmlSources;
   private final String[] features;
 
+  private int fileIdCounter = 0;
+
   public KSMLCompiler(SourceFile glslSource, SourceFile[] ksmlSources, String[] features) {
     this.glslSource = glslSource;
     this.ksmlSources = ksmlSources;
@@ -26,17 +27,19 @@ public class KSMLCompiler {
   }
 
   public String compile() {
+    var fileIdMap = new TreeMap<String, Integer>();
     var contexts = new ArrayList<KSMLFileContext>(ksmlSources.length);
 
     for (SourceFile ksmlSource : ksmlSources) {
       KSMLFileContext.Builder builder = new KSMLFileContext.Builder(ksmlSource);
+      int fileId = registerFileId(fileIdMap, ksmlSource.fileName());
 
       var stripped = compileSource(ksmlSource,
               KSMLLexer::new,
               KSMLParser::new,
               KSMLParser::ksmlTranslationUnit,
               GeneralErrorListener::new,
-              rewriter -> new KSMLRewriteListener(rewriter, ksmlSource, builder));
+              rewriter -> new KSMLRewriteListener(rewriter, ksmlSource, builder, fileId));
 
       KSMLFileContext ctx = builder.build(stripped);
       contexts.add(ctx);
@@ -53,11 +56,12 @@ public class KSMLCompiler {
     }
 
     var postStrippingContextBuilder = new GLSLPostStrippingContext.Builder();
+    int fileId = registerFileId(fileIdMap, glslSource.fileName());
     var strippedGLSL = compileSource(glslSource, GLSLLexer::new, GLSLParser::new,
             GLSLParser::translation_unit,
             GeneralErrorListener::new,
             rewriter -> new GLSLRewriteListener(rewriter, glslSource, contexts,
-                    postStrippingContextBuilder));
+                    postStrippingContextBuilder, fileId));
     var postStrippingContext = postStrippingContextBuilder.build();
 
     glslSource.reportBuilder().print(System.out);
@@ -66,6 +70,7 @@ public class KSMLCompiler {
     }
 
     var builder = new StringBuilder();
+    injectFileIdMappingComment(fileIdMap, builder);
     assembleGLSLVersion(postStrippingContext, builder);
     assembleKSMLModuleHeaders(contexts, builder);
     assembleKSMLModuleBodies(contexts, builder);
@@ -73,6 +78,15 @@ public class KSMLCompiler {
     builder.append(strippedGLSL);
 
     return builder.toString();
+  }
+
+  private void injectFileIdMappingComment(final Map<String, Integer> fileIdMap,
+                                          final StringBuilder builder) {
+    builder.append("/* File Mapping:\n");
+    fileIdMap.forEach((key, value) -> {
+      builder.append(String.format(" * %s <-> %d\n", key, value));
+    });
+    builder.append(" */\n");
   }
 
   private void assembleGLSLVersion(final GLSLPostStrippingContext ctx,
@@ -106,7 +120,6 @@ public class KSMLCompiler {
                                         final StringBuilder builder) {
     for (var ctx : contexts) {
       builder.append(String.format("/* MODULE \"%s\" DEFINITIONS */\n\n", ctx.moduleName));
-      builder.append(String.format("#line 1 \"%s\"\n", ctx.sourceFile.fileName()));
       builder.append(ctx.strippedSource);
       builder.append('\n');
     }
@@ -114,8 +127,16 @@ public class KSMLCompiler {
 
   private void assembleGLSLBody(final StringBuilder builder) {
     builder.append("/* GLSL SHADER DEFINITION */\n\n");
-    builder.append(String.format("#line 1 \"%s\"\n", glslSource.fileName()));
     builder.append('\n');
+  }
+
+  private int registerFileId(Map<String, Integer> fileIdMap, String filePath) {
+    var id = fileIdMap.get(filePath);
+
+    if (id == null)
+      fileIdMap.put(filePath, id = fileIdCounter++);
+
+    return id;
   }
 
   private <LE extends Lexer, PA extends Parser, EL extends BaseErrorListener, LI extends ParseTreeListener> String compileSource(

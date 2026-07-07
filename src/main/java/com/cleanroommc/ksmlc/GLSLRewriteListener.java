@@ -18,18 +18,21 @@ public class GLSLRewriteListener extends GLSLParserBaseListener implements Rewri
   private final FileReportBuilder fileReportBuilder;
   private final List<KSMLFileContext> contexts;
   private final GLSLPostStrippingContext.Builder builder;
+  private final int fileId;
 
   public GLSLRewriteListener(
       final TokenStreamRewriter rewriter,
       final SourceFile glslSource,
       final List<KSMLFileContext> contexts,
-      final GLSLPostStrippingContext.Builder builder
+      final GLSLPostStrippingContext.Builder builder,
+      final int fileId
   ) {
     this.rewriter = rewriter;
     this.glslSource = glslSource;
     this.fileReportBuilder = glslSource.reportBuilder();
     this.contexts = contexts;
     this.builder = builder;
+    this.fileId = fileId;
   }
 
   @Override
@@ -48,6 +51,11 @@ public class GLSLRewriteListener extends GLSLParserBaseListener implements Rewri
   public void enterImportMeta(GLSLParser.ImportMetaContext ctx) {
     deleteNewlines(ctx);
     deleteCtx(ctx);
+  }
+
+  @Override
+  public void enterExternal_declaration(GLSLParser.External_declarationContext ctx) {
+    rewriter.insertBefore(ctx.start, String.format("#line %d %d\n", ctx.start.getLine(), fileId));
   }
 
   @Override
