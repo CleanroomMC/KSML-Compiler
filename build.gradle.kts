@@ -2,6 +2,7 @@ plugins {
     id("java")
     antlr
     id("com.gradleup.shadow") version ("8.3.0")
+    application
 }
 
 group = "com.cleanroommc.ksmlc"
@@ -34,6 +35,9 @@ tasks.generateGrammarSource {
     outputDirectory = file("build/generated-src/antlr/main/com/cleanroommc/ksmlc/glsl/grammar/")
 }
 
+application {
+    mainClass = "com.cleanroommc.ksmlc.Main"
+}
 
 tasks.test {
     useJUnitPlatform()

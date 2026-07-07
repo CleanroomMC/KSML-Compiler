@@ -37,6 +37,13 @@ REQUIRES : 'requires';
 GL_VERSION : 'gl_version';
 EXPORT : 'export';
 GL_REQUIRES: 'gl_requires';
+FEATURE : 'feature';
+CODE : 'code';
+
+GL_PROFILE_CORE   : 'core';
+GL_PROFILE_COMPAT : 'compat';
+
+TRIPLE_QUOTE : '"""';
 
 VERSION_NUMBER : DIGIT_SEQUENCE;
 
@@ -302,6 +309,7 @@ FLOATCONSTANT:
 INTCONSTANT       : DECIMAL_CONSTANT | HEX_CONSTANT | OCTAL_CONSTANT;
 UINTCONSTANT      : INTCONSTANT INTEGER_SUFFIX;
 BLOCK_COMMENT     : '/*' .*? '*/'                           -> channel(HIDDEN);
+IMPORT_DIRECTIVE  : '//' [ \t]* '@import' [ \t]+ IDENTIFIER [ \t]*;
 LINE_COMMENT      : '//' (~ [\r\n\\] | '\\' (NEWLINE | .))* -> channel(HIDDEN);
 LINE_CONTINUATION : '\\' NEWLINE                            -> channel(HIDDEN);
 IDENTIFIER        : [a-zA-Z_] [a-zA-Z0-9_]*;

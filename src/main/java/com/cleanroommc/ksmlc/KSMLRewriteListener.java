@@ -2,15 +2,7 @@ package com.cleanroommc.ksmlc;
 
 import chaos.unity.nenggao.AbstractSpan;
 import chaos.unity.nenggao.FileReportBuilder;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.ExportMetaContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.FunctionCallContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.FunctionDeclContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.Function_definitionContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.GlRequiresMetaContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.GlVersionMetaContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.MemberAccessContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.ModuleMetaContext;
-import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.RequiresMetaContext;
+import com.cleanroommc.ksmlc.glsl.grammar.KSMLParser.*;
 import com.cleanroommc.ksmlc.glsl.grammar.KSMLParserBaseListener;
 import com.diogonunes.jcolor.Ansi;
 import com.diogonunes.jcolor.Attribute;
@@ -31,8 +23,8 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
   private ExportMetaContext exportMetaCtx;
 
   public KSMLRewriteListener(final TokenStreamRewriter rewriter,
-      final SourceFile ksmlSource,
-      final KSMLFileContext.Builder builder) {
+                             final SourceFile ksmlSource,
+                             final KSMLFileContext.Builder builder) {
     this.rewriter = rewriter;
     this.ksmlSource = ksmlSource;
     this.fileReportBuilder = ksmlSource.reportBuilder();
@@ -61,9 +53,9 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
   public void enterExportMeta(ExportMetaContext ctx) {
     if (exportMetaCtx != null) {
       fileReportBuilder.error(Utils.spanFromCtx(ctx),
-              "Cannot export multiple times for declaration")
-          .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
-          .build();
+                      "Cannot export multiple times for declaration")
+              .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
+              .build();
     }
 
     exportMetaCtx = ctx;
@@ -74,12 +66,21 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
   public void enterGlRequiresMeta(GlRequiresMetaContext ctx) {
     if (requireVersion != null) {
       fileReportBuilder.error(Utils.spanFromCtx(ctx),
-              "Cannot require version multiple times for declaration")
-          .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
-          .build();
+                      "Cannot require version multiple times for declaration")
+              .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
+              .build();
     }
 
     requireVersion = ctx.VERSION_NUMBER().getText();
+    rewriter.replace(ctx.start, ctx.stop, "");
+  }
+
+  @Override
+  public void exitCodeBlock(CodeBlockContext ctx) {
+    rewriter.replace(ctx.AT().getSymbol(), ctx.TRIPLE_QUOTE(0).getSymbol(), "\n");
+    rewriter.replace(ctx.TRIPLE_QUOTE(1).getSymbol(), "\n");
+    // Clear meta contexts
+    exportMetaCtx = null;
   }
 
   @Override
@@ -89,57 +90,23 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
 
     if (!builder.addMemberName(functionName, functionName)) {
       fileReportBuilder.error(Utils.spanFromCtx(ctx.function_prototype()),
-              "Function with same globalVisibleName already exists in module")
-          .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
-          .build();
+                      "Function with same name already exists in module")
+              .label(Utils.spanFromCtx(ctx), "Error occurs here").color(Attribute.RED_TEXT()).build()
+              .build();
     }
 
     if (exportMetaCtx != null) {
-      var globalVisibleName =
-          exportMetaCtx.IDENTIFIER() != null ? exportMetaCtx.IDENTIFIER().getText() : null;
-
-      builder.addExportable(globalVisibleName,
-          functionName,
-          requireVersion,
-          KSMLFileContext.ExportTargetType.Function);
-
-      if (globalVisibleName != null) {
-        if (globalVisibleName.equals(functionName)) {
-          fileReportBuilder.warning(Utils.spanFromCtxs(exportMetaCtx, ctx.function_prototype()),
-                  Ansi.colorize(
-                      "Exporting symbol with same globalVisibleName as function globalVisibleName is redundant",
-                      Attribute.YELLOW_TEXT()))
-              .label(Utils.spanFromNode(exportMetaCtx.IDENTIFIER()),
-                  Ansi.colorize("Warning occurs here",
-                      Attribute.YELLOW_TEXT()))
-              .color(Attribute.YELLOW_TEXT())
-              .hint("Consider remove this unnecessary export globalVisibleName").build()
-              .label(Utils.spanFromNode(functionNameIdentifier),
-                  Ansi.colorize("Symbol already got same globalVisibleName",
-                      Attribute.YELLOW_TEXT()))
-              .color(Attribute.YELLOW_TEXT()).build()
-              .build();
-        } else if (!builder.addMemberName(globalVisibleName, functionName)) {
-          fileReportBuilder.error(Utils.spanFromCtx(exportMetaCtx),
-                  Ansi.colorize("Exporting symbol with same globalVisibleName already exists in module",
-                      Attribute.RED_TEXT()))
-              .label(Utils.spanFromCtx(exportMetaCtx),
-                  Ansi.colorize("Error occurs here", Attribute.RED_TEXT()))
-              .color(Attribute.RED_TEXT()).build()
-              .build();
-        }
-      }
-
-      // Reset declaration state
-      exportMetaCtx = null;
-      requireVersion = null;
+      builder.addExportable(functionName,
+              functionName,
+              requireVersion,
+              KSMLFileContext.ExportTargetType.Function);
     }
 
     rewriter.replace(functionNameIdentifier.getSymbol(), functionNameIdentifier.getSymbol(),
-        Utils.synthesizeModuleMemberName(moduleName, functionName));
+            Utils.synthesizeModuleMemberName(moduleName, functionName));
     builder.addDeclaration(rewriter.getText(
-        new Interval(ctx.function_prototype().start.getTokenIndex(),
-            ctx.function_prototype().stop.getTokenIndex())));
+            new Interval(ctx.function_prototype().start.getTokenIndex(),
+                    ctx.function_prototype().stop.getTokenIndex())));
     builder.addModuleMemberReference(moduleName, functionName, Utils.spanFromCtx(ctx));
   }
 
@@ -148,22 +115,22 @@ public class KSMLRewriteListener extends KSMLParserBaseListener {
     AbstractSpan span = Utils.spanFromCtx(ctx);
 
     fileReportBuilder.error(span, "Function prototype is not allowed in KSML")
-        .label(span, "Error occurs here").color(Attribute.RED_TEXT()).build()
-        .build();
+            .label(span, "Error occurs here").color(Attribute.RED_TEXT()).build()
+            .build();
   }
 
   @Override
   public void enterFunctionCall(FunctionCallContext ctx) {
     if (ctx.postfix_expression() instanceof MemberAccessContext maCtx) {
       var moduleName = rewriter.getText(
-          Interval.of(maCtx.postfix_expression().start.getTokenIndex(),
-              maCtx.postfix_expression().stop.getTokenIndex()));
+              Interval.of(maCtx.postfix_expression().start.getTokenIndex(),
+                      maCtx.postfix_expression().stop.getTokenIndex()));
       var functionName = maCtx.field_selection().variable_identifier().IDENTIFIER().getText();
 
       // ChAoS: We assume the target reference is present here, but later actually checked in KSMLChecker
       builder.addModuleMemberReference(moduleName, functionName, Utils.spanFromCtx(ctx));
       rewriter.replace(maCtx.start, maCtx.stop,
-          Utils.synthesizeModuleMemberName(moduleName, functionName));
+              Utils.synthesizeModuleMemberName(moduleName, functionName));
     }
   }
 }

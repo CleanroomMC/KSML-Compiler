@@ -10,19 +10,23 @@ ksmlTranslationUnit : moduleMeta glVersionMeta requiresMeta* ksmlDeclaration* EO
 
 moduleMeta : AT MODULE IDENTIFIER;
 
-requiresMeta : AT REQUIRES IDENTIFIER; 
+requiresMeta : AT REQUIRES IDENTIFIER;
 
-ksmlDeclaration :
-    delcarationMetas
-    external_declaration;
-    
-delcarationMetas :
-  (exportMeta | glRequiresMeta)*;
+glVersionMeta : AT GL_VERSION VERSION_NUMBER glVersionIdent?;
 
-exportMeta : AT EXPORT IDENTIFIER?;
+glVersionIdent : GL_PROFILE_CORE | GL_PROFILE_COMPAT;
 
-glRequiresMeta : AT GL_REQUIRES VERSION_NUMBER;
+ksmlDeclaration : declarationMeta* codeBlock;
 
-glVersionMeta : AT GL_VERSION VERSION_NUMBER;
+declarationMeta :
+    exportMeta
+    | glRequiresMeta
+    | featureMeta;
 
+exportMeta : AT EXPORT;
 
+glRequiresMeta : AT GL_REQUIRES VERSION_NUMBER glVersionIdent?;
+
+featureMeta : AT FEATURE IDENTIFIER;
+
+codeBlock : AT CODE TRIPLE_QUOTE function_definition TRIPLE_QUOTE;

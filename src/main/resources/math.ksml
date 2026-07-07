@@ -1,8 +1,10 @@
 @module math
 @gl_version 120
 
-@export add_checked
-int add(int a, int b) 
+@export
+@code """
+int add_checked(int a, int b)
 {
     return a + b;
 }
+"""

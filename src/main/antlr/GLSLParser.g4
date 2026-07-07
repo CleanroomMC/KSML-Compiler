@@ -33,7 +33,7 @@ translation_unit
     ;
 
 importMeta
-    : AT IMPORT IDENTIFIER;
+    : IMPORT_DIRECTIVE;
 
 variable_identifier
     : IDENTIFIER
